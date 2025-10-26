@@ -1,32 +1,30 @@
 #!/bin/bash
 set -o errexit
 
-echo "🚀 Iniciando proceso de despliegue..."
+echo "🚀 Iniciando despliegue..."
+echo "🐍 Versión de Python:"
+python --version
+
 echo "📦 Instalando dependencias..."
 pip install -r requirements.txt
 
-echo "📁 Recopilando archivos estáticos..."
+echo "📁 Archivos estáticos..."
 python manage.py collectstatic --noinput
 
-echo "🗄️ Aplicando migraciones de base de datos..."
+echo "🗄️ Base de datos..."
 python manage.py migrate
 
-echo "🤖 Verificando modelo de Machine Learning..."
+echo "🤖 Modelo ML..."
 python manage.py shell -c "
 import os
 from titanic.views import train_and_save_model, MODEL_PATH
-
-print(f'📂 Ruta del modelo: {MODEL_PATH}')
-
-if os.path.exists(MODEL_PATH):
-    print('✅ Modelo ya existe, no es necesario entrenar')
+print(f'Ruta modelo: {MODEL_PATH}')
+if not os.path.exists(MODEL_PATH):
+    print('Entrenando modelo...')
+    train_and_save_model()
+    print('Modelo listo')
 else:
-    print('🆕 Entrenando nuevo modelo...')
-    model = train_and_save_model()
-    if model is not None:
-        print('✅ Modelo entrenado exitosamente')
-    else:
-        print('❌ Error: No se pudo entrenar el modelo')
+    print('Modelo existe')
 "
 
-echo "✅ ¡Despliegue completado con éxito!"
+echo "✅ ¡Listo!"
