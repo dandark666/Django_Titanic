@@ -1,1 +1,183 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Predicción Titanic</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .btn-primary {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border: none;
+            border-radius: 25px;
+            padding: 10px 30px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-body p-5">
+                        <h1 class="text-center mb-4">🚢 ¿Sobrevivirías al Titanic?</h1>
+                        <p class="text-center text-muted mb-4">
+                            Completa el formulario para descubrir si hubieras sobrevivido al histórico viaje
+                        </p>
 
+                        <form id="prediction-form" class="row g-3">
+                            {% csrf_token %}
+                            
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">🏷️ Clase del Pasaje</label>
+                                <select name="pclass" class="form-select" required>
+                                    <option value="1">1° Clase - Lujo</option>
+                                    <option value="2">2° Clase - Confort</option>
+                                    <option value="3" selected>3° Clase - Estandar</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">👤 Sexo</label>
+                                <select name="sex" class="form-select" required>
+                                    <option value="male">Hombre</option>
+                                    <option value="female">Mujer</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">🎂 Edad</label>
+                                <input type="number" name="age" class="form-control" 
+                                       placeholder="Ej: 25" min="0" max="100" step="0.1" value="30" required>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">👨‍👩‍👧‍👦 Hermanos/Esposa</label>
+                                <input type="number" name="sibsp" class="form-control" 
+                                       value="0" min="0" max="10" required>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">👶 Hijos/Padres</label>
+                                <input type="number" name="parch" class="form-control" 
+                                       value="0" min="0" max="10" required>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">💰 Tarifa (£)</label>
+                                <input type="number" name="fare" class="form-control" 
+                                       placeholder="Ej: 7.25" min="0" step="0.01" value="10" required>
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label fw-bold">⚓ Puerto de Embarque</label>
+                                <select name="embarked" class="form-select" required>
+                                    <option value="S">Southampton (Reino Unido)</option>
+                                    <option value="C">Cherbourg (Francia)</option>
+                                    <option value="Q">Queenstown (Irlanda)</option>
+                                </select>
+                            </div>
+
+                            <div class="col-12 text-center mt-4">
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    🎯 Predecir Supervivencia
+                                </button>
+                            </div>
+                        </form>
+
+                        <div id="result" class="mt-5"></div>
+                    </div>
+                </div>
+
+                <div class="card mt-4">
+                    <div class="card-body">
+                        <h5>💡 Ejemplos para probar:</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong>Alta probabilidad de supervivencia:</strong><br>
+                                • Mujer, 1° clase, 25 años, £80
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Baja probabilidad de supervivencia:</strong><br>
+                                • Hombre, 3° clase, 35 años, £8
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('prediction-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const form = e.target;
+            const formData = new FormData(form);
+            const resultDiv = document.getElementById('result');
+            
+            resultDiv.innerHTML = `
+                <div class="alert alert-info text-center">
+                    <div class="spinner-border me-2" role="status"></div>
+                    Analizando tus datos...
+                </div>
+            `;
+
+            try {
+                const response = await fetch('/predict/', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Error del servidor');
+                }
+
+                const survived = data.survived === 1;
+                const probability = (data.probability_survive * 100).toFixed(1);
+
+                resultDiv.innerHTML = `
+                    <div class="card ${survived ? 'border-success' : 'border-danger'}">
+                        <div class="card-body text-center py-4">
+                            <h2 class="${survived ? 'text-success' : 'text-danger'}">
+                                ${survived ? '🎉 ¡SOBREVIVIRÍAS!' : '💀 No sobrevivirías'}
+                            </h2>
+                            <div class="progress mt-3 mb-3" style="height: 25px;">
+                                <div class="progress-bar ${survived ? 'bg-success' : 'bg-danger'}" 
+                                     style="width: ${probability}%">
+                                    ${probability}%
+                                </div>
+                            </div>
+                            <p class="mb-0">
+                                Probabilidad de supervivencia: <strong>${probability}%</strong>
+                            </p>
+                            <small class="text-muted">
+                                Basado en datos históricos reales del Titanic
+                            </small>
+                        </div>
+                    </div>
+                `;
+
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="alert alert-danger">
+                        <strong>Error:</strong> ${error.message}
+                    </div>
+                `;
+            }
+        });
+    </script>
+</body>
+</html>
