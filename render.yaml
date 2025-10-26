@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: titanic-predictor
+    env: python
+    plan: free
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn titanic_project.wsgi:application"
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+      - key: WEB_CONCURRENCY
+        value: 4
