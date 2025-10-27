@@ -1,8 +1,9 @@
 services:
   - type: web
-    name: titanic-predictor
+    name: mi-titanic-app
     env: python
     plan: free
+    pythonVersion: "3.11.0"  # ← Agrega esta línea
     buildCommand: "./build.sh"
     startCommand: "gunicorn titanic_project.wsgi:application"
     envVars:
